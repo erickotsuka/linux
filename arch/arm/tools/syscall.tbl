@@ -421,4 +421,3 @@
 404 common  init_semaphore  sys_init_semaphore
 405 common  up              sys_up
 406 common  down            sys_down
-407 common  sem_debug       sys_sem_debug

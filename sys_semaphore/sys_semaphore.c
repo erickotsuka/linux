@@ -8,26 +8,35 @@
 #include <linux/wait.h>
 #include <linux/interrupt.h>
 
-DECLARE_WAIT_QUEUE_HEAD(sem_queue);
+#define SEMAPHORE_MAX_INSTANCES (30)
+
+typedef struct __semaphore
+{
+	int id;
+	int counter;
+	wait_queue_head_t queue;
+} semaphore_t;
 
 static int next_semaphore_id = 0;
-static int semaphore_counter = 0;
+static semaphore_t semaphore_list[SEMAPHORE_MAX_INSTANCES];
 
 static int create_semaphore(int initial_counter)
 {
-	semaphore_counter = initial_counter;
-	return next_semaphore_id;
+	semaphore_list[next_semaphore_id].id = next_semaphore_id;
+	semaphore_list[next_semaphore_id].counter = initial_counter;
+	init_waitqueue_head(&(semaphore_list[next_semaphore_id].queue));
+	return next_semaphore_id++;
 }
 
-static long block(void)
+static long block(int sem_id)
 {
-	wait_event(sem_queue, (semaphore_counter > 0));
+	wait_event(semaphore_list[sem_id].queue, (semaphore_list[sem_id].counter > 0));
 	return 0;
 }
 
-static long unblock(void)
+static long unblock(int sem_id)
 {
-	wake_up_all(&sem_queue);
+	wake_up_all(&(semaphore_list[sem_id].queue));
 	return 0;
 }
 
@@ -39,10 +48,10 @@ asmlinkage long sys_init_semaphore(int initial_counter)
 asmlinkage long sys_up(int sem_id)
 {
 	local_irq_disable();
-	semaphore_counter++;
-	if (semaphore_counter == 1)
+	semaphore_list[sem_id].counter++;
+	if (semaphore_list[sem_id].counter == 1)
 	{
-		unblock();
+		unblock(sem_id);
 	}
 	local_irq_enable();
 	return 0;
@@ -51,24 +60,15 @@ asmlinkage long sys_up(int sem_id)
 asmlinkage long sys_down(int sem_id)
 {
 	local_irq_disable();
-	if (semaphore_counter == 0)
+	if (semaphore_list[sem_id].counter == 0)
 	{
-		block();
+		block(sem_id);
 	}
 	else
 	{
-		semaphore_counter--;
+		semaphore_list[sem_id].counter--;
 	}
 	local_irq_enable();
-	return 0;
-}
-
-/**
- * Remove this function when task is complete
- */
-asmlinkage long sys_sem_debug(void)
-{
-	printk("semaphore_counter: %d\n", semaphore_counter);
 	return 0;
 }
 
