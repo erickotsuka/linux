@@ -64,10 +64,7 @@ asmlinkage long sys_down(int sem_id)
 	{
 		block(sem_id);
 	}
-	else
-	{
-		semaphore_list[sem_id].counter--;
-	}
+	semaphore_list[sem_id].counter--;
 	local_irq_enable();
 	return 0;
 }
