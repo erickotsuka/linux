@@ -36,7 +36,7 @@ static long block(int sem_id)
 
 static long unblock(int sem_id)
 {
-	wake_up_all(&(semaphore_list[sem_id].queue));
+	wake_up(&(semaphore_list[sem_id].queue));
 	return 0;
 }
 
