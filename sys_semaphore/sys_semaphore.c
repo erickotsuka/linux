@@ -22,6 +22,11 @@ static semaphore_t semaphore_list[SEMAPHORE_MAX_INSTANCES];
 
 static int create_semaphore(int initial_counter)
 {
+	if (next_semaphore_id >= SEMAPHORE_MAX_INSTANCES)
+	{
+		return -1;
+	}
+
 	semaphore_list[next_semaphore_id].id = next_semaphore_id;
 	semaphore_list[next_semaphore_id].counter = initial_counter;
 	init_waitqueue_head(&(semaphore_list[next_semaphore_id].queue));
